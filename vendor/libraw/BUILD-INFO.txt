@@ -1,0 +1,5 @@
+LibRaw        0.22.2 (b93f6e45c194f5df9b02a43b1af9a54b4f41f33f)  LGPL-2.1 / CDDL-1.0
+libraw-wasm   v1.6.0 (32fd36a9883a10c1632bc20073f1ea88cc60487a)  ISC  (libraw_wrapper.cpp, index.js, index.d.ts)
+emscripten    emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.52-git (fa478400df3351f7153c0279bc638784d3d90334)
+built         2026-10-16T14:54:42Z
+sha256        8ac9b27511b24acb219e156fd468ceb81f7184ebb91dce6f1728c7e20c9dfe7f  libraw.wasm 0cba10b2ffe9cf7e4d5b29d66d04bcbb1edd3506bf9864bb41b93f09c31948c5  libraw.js cdbbdddd953b89c41942cf42f4764c786a9b35a00c25d7500c5c2e2fc080b0c7  index.js 326da491a49b82bef30329614122d43e65afdce99d0754cbe203bbc3f8586f93  worker.js 

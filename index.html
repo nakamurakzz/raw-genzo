@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>LUT現像所</title>
+    <meta name="description" content="RAW をブラウザの中だけで現像し、フィルムシミュレーションの LUT を当てる" />
+    <meta name="theme-color" content="#2b2b2b" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23767676'/%3E%3Crect x='7' y='7' width='18' height='18' rx='2' fill='%23ececec'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="bar">
+        <h1 class="brand">LUT現像所</h1>
+        <div class="file" id="fileInfo" aria-live="polite">
+          <span class="file-name">RAW 未選択</span>
+        </div>
+        <label class="btn btn-ghost" for="rawInput">RAW を開く</label>
+        <input id="rawInput" type="file" class="visually-hidden" />
+      </header>
+
+      <main class="stage" id="stage">
+        <div class="frame" id="frame">
+          <canvas id="preview" hidden></canvas>
+          <div class="empty" id="empty">
+            <p class="empty-title">RAW ファイルをここにドロップ</p>
+            <p class="empty-sub">RW2 のほか、LibRaw が読める形式（ARW / NEF / CR2 / DNG など）に対応</p>
+            <label class="btn" for="rawInput">RAW を開く</label>
+            <p class="empty-note">画像はこのブラウザの中だけで処理され、どこにも送信されません。</p>
+          </div>
+          <div class="busy" id="busy" hidden><span class="busy-text" id="busyText">RAW を展開しています</span></div>
+        </div>
+        <p class="stage-hint" id="stageHint" hidden>画像を長押しするとニュートラル（LUTなし）と比べられます</p>
+      </main>
+
+      <section class="controls" aria-label="表示と露出">
+        <fieldset class="seg" id="viewSeg">
+          <legend class="visually-hidden">表示</legend>
+          <label><input type="radio" name="view" value="lut" checked /><span>LUT</span></label>
+          <label><input type="radio" name="view" value="flat" /><span>ニュートラル</span></label>
+          <label><input type="radio" name="view" value="jpeg" /><span>カメラJPEG</span></label>
+        </fieldset>
+
+        <div class="ev">
+          <div class="ev-head">
+            <label for="ev">露出補正</label>
+            <output id="evOut" for="ev">0.0</output>
+            <button type="button" class="link" id="evReset">0 に戻す</button>
+          </div>
+          <div class="ev-scale">
+            <div class="ev-ticks" id="evTicks" aria-hidden="true"></div>
+            <input id="ev" type="range" min="-3" max="3" step="0.3333333333333333" value="0" />
+          </div>
+          <p class="ev-note">0 はカメラが記録した JPEG と同じ明るさです</p>
+        </div>
+      </section>
+
+      <aside class="side" aria-label="LUT">
+        <div class="side-scroll">
+          <section class="group" id="lensGroup" hidden>
+            <h2 class="group-title">レンズ補正</h2>
+            <p class="lens-name" id="lensName"></p>
+            <label class="check">
+              <input type="checkbox" id="lensDist" />
+              <span class="check-text"><span>歪曲</span><span class="check-note" id="lensDistNote"></span></span>
+            </label>
+            <label class="check">
+              <input type="checkbox" id="lensVig" />
+              <span class="check-text"><span>周辺減光</span><span class="check-note" id="lensVigNote"></span></span>
+            </label>
+            <p class="credit" id="lensfunCredit" hidden>
+              周辺減光のデータ: <a href="https://github.com/lensfun/lensfun" target="_blank" rel="noopener">Lensfun</a>（CC BY-SA 3.0）
+            </p>
+          </section>
+
+          <section class="group">
+            <h2 class="group-title">基準</h2>
+            <div class="list" id="listBase" role="radiogroup" aria-label="基準"></div>
+          </section>
+
+          <section class="group">
+            <h2 class="group-title">abpy の再現 LUT</h2>
+            <div class="list" id="listAbpy" role="radiogroup" aria-label="abpy の再現 LUT"></div>
+            <div class="group-empty" id="abpyEmpty">
+              <p>Adobe の Fujifilm 用カメラマッチングプロファイルをもとに作られた 11 種の LUT を GitHub から読み込みます。</p>
+              <button type="button" class="btn" id="abpyLoad">abpy の LUT を読み込む</button>
+            </div>
+            <p class="credit" id="abpyCredit" hidden>
+              <a href="https://github.com/abpy/FujifilmCameraProfiles" target="_blank" rel="noopener">abpy/FujifilmCameraProfiles</a>
+              （CC BY-NC-SA 4.0）
+            </p>
+          </section>
+
+          <section class="group">
+            <h2 class="group-title">読み込んだ LUT</h2>
+            <div class="list" id="listUser" role="radiogroup" aria-label="読み込んだ LUT"></div>
+            <div class="group-empty">
+              <p id="userHint">
+                富士フイルム公式の F-Log2 用 LUT（<a href="https://www.fujifilm-x.com/global/support/download/lut/" target="_blank" rel="noopener">ダウンロードページ</a>の zip のままで可）や、手持ちの .cube を追加できます。
+              </p>
+              <label class="btn" for="lutInput">LUT を追加</label>
+              <input id="lutInput" type="file" accept=".cube,.zip" multiple class="visually-hidden" />
+            </div>
+          </section>
+        </div>
+
+        <div class="export">
+          <button type="button" class="btn btn-primary" id="exportBtn" disabled>JPEG を書き出す</button>
+          <p class="export-status" id="exportStatus" aria-live="polite"></p>
+          <p class="legal">
+            富士フイルム・パナソニックとは関係のない個人の非公式ツールです。
+            <a href="THIRD_PARTY_NOTICES.txt" target="_blank" rel="noopener">ライセンス</a>
+            <a href="https://github.com/nakamurakzz/raw-genzo" target="_blank" rel="noopener">ソース</a>
+          </p>
+        </div>
+      </aside>
+
+      <p class="toast" id="toast" role="alert" hidden></p>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

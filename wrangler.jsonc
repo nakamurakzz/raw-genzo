@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Worker スクリプトなし（静的アセットのみ）。処理はすべてブラウザ側。
+  "name": "raw-genzo",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}
